@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+
+# SQLite
+data.db
+
+# 用户上传的失物图片
+uploads/
+
+# 人脸数据集（隐私数据，仅保留说明文件）
+face_dataset/*
+!face_dataset/.gitkeep
+!face_dataset/README.md
+
+# InsightFace 模型（每个人自己下载）
+.insightface/
+
+# IDE
+.vscode/
+.idea/
+
+# 系统垃圾
+Thumbs.db
+Desktop.ini

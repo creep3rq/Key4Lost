@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>失物解锁 - 校园寻物平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    </style>
+</head>
+<body class="bg-[#f4f6f9] text-gray-800 font-sans min-h-screen">
+
+    <!-- 顶部 -->
+    <div class="max-w-7xl mx-auto pt-8 px-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold mb-1">失物解锁</h1>
+                <p class="text-sm text-gray-500">查看你的资料与发布统计</p>
+            </div>
+            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-medium transition shadow-lg shadow-blue-200">
+                + 发布新物品
+            </button>
+        </div>
+    </div>
+
+    <!-- 仪表盘 -->
+    <div class="max-w-7xl mx-auto pt-6 px-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 class="text-sm font-bold text-gray-800 mb-4">基础资料</h2>
+            <div class="mb-3"><p class="text-xs text-gray-500 mb-1">昵称</p><p class="text-sm font-medium">站长</p></div>
+            <div><p class="text-xs text-gray-500 mb-1">邮箱</p><p class="text-sm font-medium">339847@whut.edu.cn</p></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 class="text-sm font-bold text-gray-800 mb-4">发布概览</h2>
+            <div class="flex space-x-3">
+                <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex-1 text-center relative overflow-hidden">
+                    <div class="absolute -top-2 -right-2 w-8 h-8 bg-blue-100 rounded-full opacity-50"></div>
+                    <p class="text-xs text-gray-500 mb-1">总数</p><p class="text-2xl font-bold" id="stat-total">0</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex-1 text-center relative overflow-hidden">
+                    <div class="absolute -top-2 -right-2 w-8 h-8 bg-green-100 rounded-full opacity-50"></div>
+                    <p class="text-xs text-gray-500 mb-1">招领</p><p class="text-2xl font-bold" id="stat-found">0</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex-1 text-center relative overflow-hidden">
+                    <div class="absolute -top-2 -right-2 w-8 h-8 bg-red-100 rounded-full opacity-50"></div>
+                    <p class="text-xs text-gray-500 mb-1">失物</p><p class="text-2xl font-bold" id="stat-lost">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 class="text-sm font-bold text-gray-800 mb-4">账号状态</h2>
+            <p class="text-sm font-medium text-gray-800 mb-6">已登录，资料同步正常</p>
+            <p class="text-xs text-gray-400">如有异常请刷新或重新登录</p>
+        </div>
+    </div>
+
+    <!-- 过滤 -->
+    <div class="max-w-7xl mx-auto pt-6 px-6 flex justify-between items-center">
+        <div class="bg-white rounded-full p-1 shadow-sm flex border border-gray-100 space-x-1" id="filter-container">
+            <button class="filter-btn active bg-blue-600 text-white text-sm px-5 py-1.5 rounded-full" data-filter="全部">全部</button>
+            <button class="filter-btn hover:bg-gray-100 text-gray-600 text-sm px-5 py-1.5 rounded-full transition" data-filter="失物">失物</button>
+            <button class="filter-btn hover:bg-gray-100 text-gray-600 text-sm px-5 py-1.5 rounded-full transition" data-filter="招领">招领</button>
+        </div>
+        <div class="flex space-x-3 items-center">
+            <div class="relative">
+                <input type="text" placeholder="搜索标题或地点" class="text-sm border border-gray-200 rounded-full pl-4 pr-8 py-1.5 focus:outline-none focus:border-blue-500 w-64">
+            </div>
+            <span class="text-xs text-gray-500">共 <span id="list-count">0</span> 条</span>
+        </div>
+    </div>
+
+    <!-- 卡片网格 -->
+    <div class="max-w-7xl mx-auto pt-6 px-6 pb-12">
+        <div id="item-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+    </div>
+
+    <!-- ========== 发布弹窗 ========== -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-40 hidden flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold">发布物品</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="uploadForm" class="space-y-4">
+                    <div class="flex space-x-4">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="postType" value="招领" checked class="text-blue-600">
+                            <span class="text-sm">捡到物品 (招领)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="postType" value="失物" class="text-blue-600">
+                            <span class="text-sm">丢失物品 (失物)</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">物品标签</label>
+                        <select id="itemTag" class="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:border-blue-500">
+                            <option value="电子产品">电子产品</option><option value="卡片证件">卡片证件</option>
+                            <option value="书籍文具">书籍文具</option><option value="生活用品">生活用品</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">物品描述</label>
+                        <textarea id="itemDesc" rows="3" placeholder="例如：黑色罗技鼠标，底部有磨损..." class="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:border-blue-500" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">地点</label>
+                            <input type="text" id="itemLoc" placeholder="例如：图书馆" class="w-full text-sm border border-gray-300 rounded-lg p-2 focus:outline-none focus:border-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">上传图片</label>
+                            <input type="file" id="itemImg" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" required>
+                        </div>
+                    </div>
+                    <div id="previewContainer" class="hidden mt-2 h-32 w-full bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                        <img id="imgPreview" src="" class="h-full object-contain">
+                    </div>
+                    <button type="submit" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition">
+                        立即发布
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 认领弹窗 ========== -->
+    <div id="claimModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold">人脸认领</h3>
+                <button onclick="closeClaimModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+            <div class="p-6 text-center space-y-4">
+                <p class="text-sm text-gray-500" id="claimItemInfo"></p>
+                <div class="relative bg-black rounded-xl overflow-hidden" style="height:240px">
+                    <video id="claimVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+                    <canvas id="claimCanvas" class="hidden"></canvas>
+                </div>
+                <div id="claimResult" class="hidden text-sm font-medium py-2 px-4 rounded-lg"></div>
+                <div id="claimActions" class="flex space-x-3 justify-center">
+                    <button id="btnCapture" onclick="captureAndRecognize()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-medium transition shadow">拍照识别</button>
+                </div>
+                <div id="claimConfirm" class="hidden flex space-x-3 justify-center">
+                    <button onclick="confirmClaim()"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-full font-medium transition shadow">确认认领</button>
+                    <button onclick="retryClaim()"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2.5 rounded-full font-medium transition">重新拍照</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 全局数据 ==========
+        let itemsData = [];
+
+        // ========== 数据加载 ==========
+        async function loadItems() {
+            const resp = await fetch("/api/items");
+            itemsData = await resp.json();
+            renderItems();
+        }
+
+        function getImgUrl(item) {
+            if (!item.img_path) return "";
+            if (item.img_path.startsWith("http")) return item.img_path;
+            return item.img_path;
+        }
+
+        // ========== 渲染 ==========
+        function renderItems(filter = "全部") {
+            const grid = document.getElementById("item-grid");
+            grid.innerHTML = "";
+
+            let filtered = filter === "全部" ? itemsData : itemsData.filter(i => i.post_type === filter);
+
+            document.getElementById("list-count").innerText = filtered.length;
+            document.getElementById("stat-total").innerText = itemsData.length;
+            document.getElementById("stat-found").innerText = itemsData.filter(i => i.post_type === "招领").length;
+            document.getElementById("stat-lost").innerText = itemsData.filter(i => i.post_type === "失物").length;
+
+            filtered.forEach(item => {
+                const typeColor = item.post_type === "招领" ? "text-green-600" : "text-red-600";
+                const cardHtml = `<div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition border border-gray-100 flex flex-col h-full">
+                    <div class="h-48 overflow-hidden bg-gray-100 relative">
+                        <img src="${getImgUrl(item)}" alt="物品图片" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22><rect fill=%22%23e2e8f0%22 width=%22400%22 height=%22300%22/><text x=%22200%22 y=%22150%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22>无图片</text></svg>'">
+                        <span class="absolute top-3 right-3 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded shadow-sm text-gray-700">${item.tag}</span>
+                    </div>
+                    <div class="p-4 flex flex-col flex-grow">
+                        <p class="text-xs text-gray-800 leading-relaxed mb-3 line-clamp-3 flex-grow font-medium">${item.desc}</p>
+                        <div class="text-xs text-gray-500 mb-3 flex items-center space-x-1">
+                            <span class="${typeColor} font-bold">${item.post_type}</span><span>·</span><span class="truncate">${item.loc}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-gray-400">
+                            <span>${item.time}</span>
+                            ${item.claimed_by
+                                ? `<span class="bg-green-50 text-green-600 px-3 py-1 rounded-full font-medium">${item.claimed_by} 已认领</span>`
+                                : `<button onclick="openClaimModal(${item.id})" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-medium hover:bg-blue-100 transition cursor-pointer">认领</button>`}
+                        </div>
+                    </div>
+                </div>`;
+                grid.innerHTML += cardHtml;
+            });
+        }
+
+        // ========== 过滤 ==========
+        document.querySelectorAll(".filter-btn").forEach(btn => {
+            btn.addEventListener("click", function() {
+                document.querySelectorAll(".filter-btn").forEach(b => { b.classList.remove("bg-blue-600","text-white","active"); b.classList.add("hover:bg-gray-100","text-gray-600"); });
+                this.classList.remove("hover:bg-gray-100","text-gray-600");
+                this.classList.add("bg-blue-600","text-white","active");
+                renderItems(this.getAttribute("data-filter"));
+            });
+        });
+
+        // ========== 发布弹窗 ==========
+        const modal = document.getElementById("uploadModal");
+        function openModal() { modal.classList.remove("hidden"); }
+        function closeModal() { modal.classList.add("hidden"); document.getElementById("uploadForm").reset(); document.getElementById("previewContainer").classList.add("hidden"); }
+
+        const imgInput = document.getElementById("itemImg");
+        const imgPreview = document.getElementById("imgPreview");
+        const previewContainer = document.getElementById("previewContainer");
+        let pendingImageFile = null;
+
+        imgInput.addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                pendingImageFile = file;
+                const reader = new FileReader();
+                reader.onload = function(ev) { imgPreview.src = ev.target.result; previewContainer.classList.remove("hidden"); };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById("uploadForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const now = new Date();
+            const timeStr = `${String(now.getMonth()+1).padStart(2,"0")}/${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+
+            let imgPath = "";
+            // 如果选了本地文件，先上传
+            if (pendingImageFile) {
+                const fd = new FormData();
+                fd.append("image", pendingImageFile);
+                const upResp = await fetch("/api/upload", { method: "POST", body: fd });
+                const upData = await upResp.json();
+                imgPath = upData.path;
+            }
+
+            const newItem = {
+                postType: document.querySelector('input[name="postType"]:checked').value,
+                tag: document.getElementById("itemTag").value,
+                desc: document.getElementById("itemDesc").value,
+                loc: document.getElementById("itemLoc").value,
+                time: timeStr,
+                img_path: imgPath
+            };
+
+            const resp = await fetch("/api/items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newItem)
+            });
+            await resp.json();
+            closeModal();
+            pendingImageFile = null;
+            await loadItems();
+        });
+
+        // ========== 认领 ==========
+        let currentClaimItemId = null;
+        let currentClaimName = null;
+        let currentClaimSim = 0;
+        let claimStream = null;
+
+        const claimModal = document.getElementById("claimModal");
+        const claimVideo = document.getElementById("claimVideo");
+        const claimCanvas = document.getElementById("claimCanvas");
+        const claimResult = document.getElementById("claimResult");
+        const claimActions = document.getElementById("claimActions");
+        const claimConfirm = document.getElementById("claimConfirm");
+        const claimItemInfo = document.getElementById("claimItemInfo");
+
+        async function openClaimModal(itemId) {
+            currentClaimItemId = itemId;
+            currentClaimName = null;
+            const item = itemsData.find(i => i.id === itemId);
+            claimItemInfo.innerText = "物品: " + (item ? item.desc.slice(0,30) : "") + "...";
+            claimResult.classList.add("hidden");
+            claimActions.classList.remove("hidden");
+            claimConfirm.classList.add("hidden");
+            claimModal.classList.remove("hidden");
+            try {
+                claimStream = await navigator.mediaDevices.getUserMedia({ video: { width:640, height:480 } });
+                claimVideo.srcObject = claimStream;
+            } catch (err) {
+                claimResult.classList.remove("hidden");
+                claimResult.className = "text-sm font-medium py-2 px-4 rounded-lg bg-red-50 text-red-600";
+                claimResult.innerText = "无法访问摄像头，请检查权限";
+                claimActions.classList.add("hidden");
+            }
+        }
+
+        function closeClaimModal() {
+            if (claimStream) { claimStream.getTracks().forEach(t => t.stop()); claimStream = null; }
+            claimVideo.srcObject = null;
+            claimModal.classList.add("hidden");
+            currentClaimItemId = null;
+            currentClaimName = null;
+        }
+
+        async function captureAndRecognize() {
+            claimCanvas.width = claimVideo.videoWidth;
+            claimCanvas.height = claimVideo.videoHeight;
+            claimCanvas.getContext("2d").drawImage(claimVideo, 0, 0);
+            const base64 = claimCanvas.toDataURL("image/jpeg", 0.8);
+
+            claimResult.classList.remove("hidden");
+            claimResult.className = "text-sm font-medium py-2 px-4 rounded-lg bg-blue-50 text-blue-600";
+            claimResult.innerText = "正在识别...";
+
+            try {
+                const resp = await fetch("/recognize", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ image: base64 })
+                });
+                const data = await resp.json();
+                if (data.name === "stranger") {
+                    claimResult.className = "text-sm font-medium py-2 px-4 rounded-lg bg-red-50 text-red-600";
+                    claimResult.innerText = "未识别到已注册用户，无法认领";
+                    claimActions.classList.remove("hidden");
+                } else {
+                    currentClaimName = data.name;
+                    currentClaimSim = data.sim;
+                    claimResult.className = "text-sm font-medium py-2 px-4 rounded-lg bg-green-50 text-green-600";
+                    claimResult.innerText = `识别成功: ${data.name}（相似度 ${(data.sim*100).toFixed(1)}%）`;
+                    claimActions.classList.add("hidden");
+                    claimConfirm.classList.remove("hidden");
+                }
+            } catch (err) {
+                claimResult.className = "text-sm font-medium py-2 px-4 rounded-lg bg-red-50 text-red-600";
+                claimResult.innerText = "连接识别服务失败，请确认后端已启动";
+                claimActions.classList.remove("hidden");
+            }
+        }
+
+        function retryClaim() {
+            claimResult.classList.add("hidden");
+            claimConfirm.classList.add("hidden");
+            claimActions.classList.remove("hidden");
+            currentClaimName = null;
+        }
+
+        async function confirmClaim() {
+            if (!currentClaimItemId || !currentClaimName) return;
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
+            await fetch(`/api/items/${currentClaimItemId}/claim`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: currentClaimName, sim: currentClaimSim, time: timeStr })
+            });
+            closeClaimModal();
+            await loadItems();
+        }
+
+        // 启动
+        loadItems();
+    </script>
+</body>
+</html>
